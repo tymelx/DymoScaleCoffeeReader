@@ -26,6 +26,7 @@ DATA_EMPTY_POT_WEIGHT_GRAMS = 10 #1950 #technically 1938 - but a little rounding
 DATA_EMPTY_POT_WEIGHT_OUNCES = 20 #19.5 technically - but the math.ceil will account for this!
 
 def main():
+
     try:
         dev = connect_to_scale()
 
@@ -81,26 +82,29 @@ def listen_on_scale(dev):
         if weight == previous_weight:
             total_time_same_weight += 0.5
             if total_time_same_weight == 3.0:
-                print("Stabalized!")
-                process_stable_weight(data[2], convert_scale_weight(weight))
+                #get converted weight
+                converted_weight = convert_scale_weight(weight, data[2])
+
+                #log and process
+                print "Stable weight: {} {}".format(converted_weight, ("grams" if data[2] == DATA_MODE_GRAMS else "ounces"))
+                process_stable_weight(data[2], converted_weight)
             
             continue
         else:
             total_time_same_weight = 0
 
-        previous_weight = weight
-        #if data[2] == DATA_MODE_OUNCES:
-        #    weight = math.ceil((weight * 0.1))
-        #elif data[2] == DATA_MODE_GRAMS:
-        #    weight = math.ceil(weight)
+            #Data recording! Record the different weight fluctuations!
+            print "Unstable weight: {} {}".format(convert_scale_weight(weight, data[2]), ("grams" if data[2] == DATA_MODE_GRAMS else "ounces"))
 
-        #process_scale_weight(data[2], weight)
+        previous_weight = weight
 
 def convert_scale_weight(raw_weight, mode):
     if mode == DATA_MODE_OUNCES:
-        return math.ceil((raw_weight * 0.1))
+        #return math.ceil((raw_weight * 0.1))
+        return raw_weight * 0.1
     elif mode == DATA_MODE_GRAMS:
-        return math.ceil(raw_weight)
+        #return math.ceil(raw_weight)
+        return raw_weight
         
     return weight #failsafe
 
@@ -137,7 +141,9 @@ def read_scale_weight(dev):
 
 def process_stable_weight(mode, weight):
     if weight == 0:
-        print("No pot on the scale, must be getting refilled (or it better be!")
+        #nothing on the scale state
+        #print("No pot on the scale, must be getting refilled (or it better be!")
+        math = 1
     else:
         empty_pot = False
         weight_type = None
@@ -151,7 +157,11 @@ def process_stable_weight(mode, weight):
             weight_type = "grams"
             remaining_coffee = weight - DATA_EMPTY_POT_WEIGHT_GRAMS
             
-        if empty_pot is True:
-            print("No more coffee, someone refill me!")
-        else:
-            print "{} {} of coffee remaining".format(remaining_coffee, weight_type)
+        #if empty_pot is True:
+            #empty coffee state - do something about it
+        #else:
+            #remaining coffee state
+            #print "{} {} of coffee remaining".format(remaining_coffee, weight_type)
+            
+
+main()
