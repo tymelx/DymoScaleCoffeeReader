@@ -10,20 +10,24 @@ import math
 
 #Configurations!
 #Modes for the Dymo M25 g/oz
-DATA_MODE_GRAMS = 2
-DATA_MODE_OUNCES = 11
+#DATA_MODE_GRAMS = 2
+#DATA_MODE_OUNCES = 11
+
+#Modes for the Dymo S400
+DATA_MODE_KILOGRAMS = 3
+DATA_MODE_POUNDS = 12
 
 #Device IDs - lsusb to verify this is corrects
-# DYMO M25
+# DYMO S400
 VENDOR_ID = 0x0922
-PRODUCT_ID = 0x8003
+PRODUCT_ID = 0x8009
 
 TIME_RECONNECT = 5
 
 #Take the measurements for the pot and give them here!
-DATA_EMPTY_POT_WEIGHT_GRAMS = 10 #1950 #technically 1938 - but a little rounding for that half cup won't hurt
+DATA_EMPTY_POT_WEIGHT_KILOGRAMS = 2.3 #1950 #technically 1938 - but a little rounding for that half cup won't hurt
 #could be more accurate for ounces - probably will be in the future
-DATA_EMPTY_POT_WEIGHT_OUNCES = 20 #19.5 technically - but the math.ceil will account for this!
+DATA_EMPTY_POT_WEIGHT_POUNDS = 4.6 #19.5 technically - but the math.ceil will account for this!
 
 def main():
 
@@ -86,7 +90,7 @@ def listen_on_scale(dev):
                 converted_weight = convert_scale_weight(weight, data[2])
 
                 #log and process
-                print "Stable weight: {} {}".format(converted_weight, ("grams" if data[2] == DATA_MODE_GRAMS else "ounces"))
+                print "Stable weight: {} {}".format(converted_weight, ("kilograms" if data[2] == DATA_MODE_KILOGRAMS else "pounds"))
                 process_stable_weight(data[2], converted_weight)
             
             continue
@@ -94,20 +98,12 @@ def listen_on_scale(dev):
             total_time_same_weight = 0
 
             #Data recording! Record the different weight fluctuations!
-            print "Unstable weight: {} {}".format(convert_scale_weight(weight, data[2]), ("grams" if data[2] == DATA_MODE_GRAMS else "ounces"))
+            print "Unstable weight: {} {}".format(convert_scale_weight(weight, data[2]), ("kilograms" if data[2] == DATA_MODE_KILOGRAMS else "pounds"))
 
         previous_weight = weight
 
 def convert_scale_weight(raw_weight, mode):
-    if mode == DATA_MODE_OUNCES:
-        #return math.ceil((raw_weight * 0.1))
-        return raw_weight * 0.1
-    elif mode == DATA_MODE_GRAMS:
-        #return math.ceil(raw_weight)
-        return raw_weight
-        
-    return weight #failsafe
-
+    return raw_weight * 0.1 #same conversion for both for this model
 
 def read_scale_weight(dev):
     try:
@@ -121,8 +117,13 @@ def read_scale_weight(dev):
             try:
                 data = dev.read(endpoint.bEndpointAddress,
                                    endpoint.wMaxPacketSize)
+
+                #dev.write(endpoint.bEndpointAddress, "1", endpoint.wMaxPacketSize)
+                #endpoint.write("X")
+                #print("Sending data...")
             except usb.core.USBError as e:
                 data = None
+                print(e)
                 #if e.args == ('Operation timed out',):
                 #    print("IM HERE")
                 #    attempts -= 1
@@ -148,15 +149,16 @@ def process_stable_weight(mode, weight):
         empty_pot = False
         weight_type = None
         remaining_coffee = 0
-        if mode == DATA_MODE_OUNCES:
-            empty_pot = weight <= DATA_EMPTY_POT_WEIGHT_OUNCES
-            weight_type = "ounces"
-            remaining_coffee = weight - DATA_EMPTY_POT_WEIGHT_OUNCES
-        elif mode == DATA_MODE_GRAMS:
-            empty_pot  = weight <= DATA_EMPTY_POT_WEIGHT_GRAMS
-            weight_type = "grams"
-            remaining_coffee = weight - DATA_EMPTY_POT_WEIGHT_GRAMS
-            
+        if mode == DATA_MODE_POUNDS:
+            empty_pot = weight <= DATA_EMPTY_POT_WEIGHT_POUNDS
+            weight_type = "pounds"
+            remaining_coffee = weight - DATA_EMPTY_POT_WEIGHT_POUNDS
+        elif mode == DATA_MODE_KILOGRAMS:
+            empty_pot  = weight <= DATA_EMPTY_POT_WEIGHT_KILOGRAMS
+            weight_type = "kilograms"
+            remaining_coffee = weight - DATA_EMPTY_POT_WEIGHT_KILOGRAMS
+
+        print(empty_pot)  
         #if empty_pot is True:
             #empty coffee state - do something about it
         #else:
